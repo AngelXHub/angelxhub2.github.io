@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorteio Luxo</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:Arial;
+  background:linear-gradient(135deg,#0f172a,#1e293b);
+  color:white;
+}
+header{
+  background:#111827;
+  padding:15px;
+  text-align:center;
+  font-size:20px;
+  font-weight:bold;
+}
+.container{
+  max-width:600px;
+  margin:auto;
+  padding:20px;
+}
+.card{
+  background:#1e293b;
+  padding:15px;
+  border-radius:12px;
+  margin-bottom:15px;
+  box-shadow:0 5px 15px rgba(0,0,0,0.3);
+}
+input,button{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border:none;
+  border-radius:8px;
+}
+input{
+  background:#334155;
+  color:white;
+}
+button{
+  background:#22c55e;
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+}
+button:hover{opacity:0.8}
+.admin-panel{display:none}
+.list{
+  max-height:150px;
+  overflow:auto;
+  background:#0f172a;
+  padding:10px;
+  border-radius:8px;
+}
+.resultado{
+  font-size:20px;
+  text-align:center;
+  margin-top:15px;
+  min-height:40px;
+}
+.animando{
+  animation:piscar 0.3s infinite alternate;
+}
+@keyframes piscar{
+  from{color:#22c55e;}
+  to{color:#facc15;}
+}
+.logout{
+  background:#ef4444;
+}
+</style>
+</head>
+<body>
+
+<header>🎲 Sorteio Luxo Online</header>
+
+<div class="container">
+
+<div class="card">
+<h3>Participar</h3>
+<input type="text" id="nome" placeholder="Seu nome">
+<input type="number" id="numero" placeholder="Número (1-50)">
+<button onclick="participar()">Participar</button>
+</div>
+
+<div class="card" id="loginCard">
+<h3>Login Admin</h3>
+<input type="text" id="user" placeholder="Usuário">
+<input type="password" id="pass" placeholder="Senha">
+<button onclick="login()">Entrar</button>
+</div>
+
+<div class="card admin-panel" id="adminPanel">
+<h3>Painel Administrativo</h3>
+
+<button onclick="sortear()">🎲 Realizar Sorteio</button>
+<button onclick="limpar()">🗑 Limpar Participantes</button>
+<button class="logout" onclick="logout()">🚪 Logout</button>
+
+<h4>Participantes</h4>
+<div class="list" id="lista"></div>
+
+<div class="resultado" id="resultado"></div>
+
+<h4>Histórico</h4>
+<div class="list" id="historico"></div>
+
+</div>
+
+</div>
+
+<script>
+
+// LOGIN FIXO
+const ADMIN_USER = "Admin";
+const ADMIN_PASS = "Luxo";
+
+let participantes = JSON.parse(localStorage.getItem("participantes")) || [];
+let historico = JSON.parse(localStorage.getItem("historico")) || [];
+
+function salvar(){
+  localStorage.setItem("participantes",JSON.stringify(participantes));
+  localStorage.setItem("historico",JSON.stringify(historico));
+}
+
+function atualizar(){
+  const lista=document.getElementById("lista");
+  lista.innerHTML="";
+  participantes.forEach(p=>{
+    lista.innerHTML+=`<p>${p.nome} - ${p.numero}</p>`;
+  });
+
+  const hist=document.getElementById("historico");
+  hist.innerHTML="";
+  historico.forEach(h=>{
+    hist.innerHTML+=`<p>🏆 ${h.nome} (${h.numero}) - ${h.data}</p>`;
+  });
+}
+
+function participar(){
+  const nome=document.getElementById("nome").value.trim();
+  const numero=parseInt(document.getElementById("numero").value);
+
+  if(!nome||!numero) return alert("Preencha todos os campos!");
+  if(numero<1||numero>50) return alert("Número inválido!");
+  if(participantes.some(p=>p.numero===numero))
+    return alert("Número já escolhido!");
+
+  participantes.push({nome,numero});
+  salvar();
+  atualizar();
+  alert("Participação confirmada!");
+}
+
+function login(){
+  const u=document.getElementById("user").value;
+  const p=document.getElementById("pass").value;
+
+  if(u===ADMIN_USER && p===ADMIN_PASS){
+    document.getElementById("adminPanel").style.display="block";
+    document.getElementById("loginCard").style.display="none";
+    atualizar();
+  }else{
+    alert("Usuário ou senha incorretos!");
+  }
+}
+
+function logout(){
+  location.reload();
+}
+
+function sortear(){
+  if(participantes.length===0)
+    return alert("Sem participantes!");
+
+  const resultadoDiv=document.getElementById("resultado");
+  resultadoDiv.classList.add("animando");
+
+  let contador=0;
+  const intervalo=setInterval(()=>{
+    const temp=participantes[Math.floor(Math.random()*participantes.length)];
+    resultadoDiv.innerHTML=`🎲 Sorteando... ${temp.nome} (${temp.numero})`;
+    contador++;
+
+    if(contador>15){
+      clearInterval(intervalo);
+
+      const vencedor=participantes[Math.floor(Math.random()*participantes.length)];
+      const data=new Date().toLocaleString();
+
+      historico.push({...vencedor,data});
+      participantes=[];
+      salvar();
+      atualizar();
+
+      resultadoDiv.classList.remove("animando");
+      resultadoDiv.innerHTML=`🏆 VENCEDOR: ${vencedor.nome} (${vencedor.numero}) 🎉`;
+    }
+
+  },150);
+}
+
+function limpar(){
+  participantes=[];
+  salvar();
+  atualizar();
+}
+
+atualizar();
+
+</script>
+
+</body>
+</html>
