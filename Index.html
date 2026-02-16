@@ -1,0 +1,183 @@
+<script>
+
+/* ===== ADMINS ===== */
+let admins = JSON.parse(localStorage.getItem("admins")) || [
+  {user:"Angel", pass:"Admin", cargo:"dono"},
+  {user:"BAKK", pass:"0999", cargo:"dono"},
+  {user:"Yure", pass:"0999", cargo:"moderador"}
+];
+
+let adminAtual = null;
+
+/* ===== RIFA ===== */
+let participantes = JSON.parse(localStorage.getItem("participantes")) || [];
+let categoria = JSON.parse(localStorage.getItem("categoria")) || {
+  nome: "Rifa Padrão",
+  valor: 0,
+  pix: "",
+  criador: "Sistema",
+  visivel: true
+};
+
+function salvar(){
+ localStorage.setItem("participantes",JSON.stringify(participantes));
+ localStorage.setItem("categoria",JSON.stringify(categoria));
+ localStorage.setItem("admins",JSON.stringify(admins));
+}
+
+/* ===== NUMEROS DISPONIVEIS ===== */
+function atualizarNumerosDisponiveis(){
+ let select = document.getElementById("numero");
+ if(!select) return;
+
+ select.innerHTML = "";
+
+ let usados = participantes.map(p=>p.numero);
+
+ for(let i=1;i<=50;i++){
+   if(!usados.includes(i)){
+     let op = document.createElement("option");
+     op.value = i;
+     op.textContent = i;
+     select.appendChild(op);
+   }
+ }
+}
+
+/* ===== PARTICIPAÇÃO ===== */
+function participar(){
+ let nome = getVal("nome");
+ let telefone = getVal("telefone");
+ let numero = parseInt(document.getElementById("numero").value);
+
+ if(!nome || !telefone)
+   return alert("Preencha tudo!");
+
+ participantes.push({nome,telefone,numero});
+ salvar();
+ atualizar();
+ alert("Número reservado!");
+}
+
+function getVal(id){
+ return document.getElementById(id).value.trim();
+}
+
+/* ===== LOGIN ===== */
+function login(){
+ let u = getVal("user");
+ let p = getVal("pass");
+
+ let admin = admins.find(a=>a.user===u && a.pass===p);
+ if(!admin) return alert("Login inválido");
+
+ adminAtual = admin;
+
+ document.getElementById("cargo").innerText =
+   "Cargo: "+admin.cargo;
+
+ document.getElementById("adminPanel").style.display="block";
+ document.getElementById("loginCard").style.display="none";
+
+ atualizar();
+}
+
+/* ===== CRIAR RIFA ===== */
+function criarCategoria(){
+ categoria.nome = getVal("catNome");
+ categoria.valor = parseFloat(getVal("catValor"));
+ categoria.criador = adminAtual.user;
+ salvar();
+ atualizar();
+}
+
+/* ===== PIX ===== */
+function alterarPix(){
+ if(!adminAtual) return alert("Somente admins!");
+ categoria.pix = getVal("pixRifa");
+ salvar();
+ atualizar();
+ alert("PIX atualizado!");
+}
+
+/* ===== APAGAR RIFA ===== */
+function apagarRifa(){
+ if(!adminAtual) return;
+
+ if(
+   adminAtual.cargo !== "dono" &&
+   adminAtual.user !== categoria.criador
+ ){
+   return alert("Somente criador ou dono pode apagar!");
+ }
+
+ categoria = {
+   nome: "Rifa Padrão",
+   valor: 0,
+   pix: "",
+   criador: "Sistema",
+   visivel: true
+ };
+
+ salvar();
+ atualizar();
+ alert("Rifa apagada!");
+}
+
+/* ===== ROLETA ===== */
+function rodarRoleta(){
+ let n = Math.floor(Math.random()*50)+1;
+ document.getElementById("roleta").innerText = n;
+}
+
+/* ===== LISTAS ===== */
+function atualizar(){
+
+ atualizarNumerosDisponiveis();
+
+ document.getElementById("valorInfo").innerText =
+ categoria.valor==0
+ ? "Rifa gratuita"
+ : "Valor da rifa: R$"+categoria.valor;
+
+ document.getElementById("infoCriador").innerText =
+ "Rifa criada por: "+categoria.criador;
+
+ document.getElementById("infoPix").innerText =
+ categoria.valor>0
+ ? "PIX para pagamento: "+categoria.pix
+ : "";
+
+ let lista=document.getElementById("lista");
+ lista.innerHTML="";
+ participantes.forEach(p=>{
+  lista.innerHTML += `<p>${p.nome} - ${p.numero} - ${p.telefone}</p>`;
+ });
+}
+
+/* ===== SORTEIO ===== */
+function sortear(){
+ if(participantes.length==0)
+   return alert("Sem participantes");
+
+ let v = participantes[Math.floor(Math.random()*participantes.length)];
+
+ document.getElementById("resultado").innerText =
+ "Vencedor: "+v.nome+" ("+v.numero+")";
+
+ participantes=[];
+ salvar();
+ atualizar();
+}
+
+function limpar(){
+ participantes=[];
+ salvar();
+ atualizar();
+}
+
+function logout(){ location.reload(); }
+
+atualizar();
+
+</script>
